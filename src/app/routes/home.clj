@@ -4,7 +4,9 @@
             [app.views.layout :as layout]
             [ring.util.response :refer [response]]
             [clojure.java.jdbc :as jdbc]
-            [java-jdbc.ddl :as ddl]))
+            [java-jdbc.ddl :as ddl]
+            [clojurewerkz.scrypt.core :as sc]
+            [java-jdbc.sql :as sql]))
 
 (def db-spec {:classname "org.postgresql.Driver"
               :subprotocol "postgresql"
@@ -12,12 +14,26 @@
               :user "master"
               :password "secret"})
 
+(defn verify [email password]
+  (println "verify")
+  (let [q (jdbc/query db-spec
+                      (sql/select "password" :appuser (sql/where {:email email})))]
+    (let [h ((first q) :password)]
+      (println password)
+      (println h)
+      (sc/verify password h))))
+
+(defn save-user [email password name admin]
+  (try
+    (jdbc/insert! db-spec :appuser {:email email
+                                    :password (sc/encrypt password 16384 8 1)
+                                    :name name
+                                    :admin admin})
+    (catch Exception e (str "loaddb caught exception: " (.getMessage e)))))
+
 (defn loaddb []
   (try
-    (jdbc/insert! db-spec :appuser {:email "a@a.com"
-                                    :password "secret"
-                                    :name "A"
-                                    :admin true})
+    (save-user "a@a.com" "secret" "A" true)
     (catch Exception e (str "loaddb caught exception: " (.getMessage e)))))
 
 
@@ -36,11 +52,18 @@
     (jdbc/db-do-commands db-spec (ddl/drop-table :appuser))
     (catch Exception e (str "drop-appuser caught exception: " (.getMessage e)))))
 
-
 (defn reset []
     (drop-appuser)
     (create-db)
     (loaddb))
+
+(defn login [body]
+  (let [email ((body :body) "email")
+        password ((body :body) "password")]
+    (if (verify email password)
+      (response {:r "ok"})
+      (response {:r "nop"}))
+    ))
 
 (defn home []
   (layout/common [:h1 "Hello World!"]))
@@ -53,9 +76,15 @@
 (defn post [r]
   (response (:body r)))
 
+(defn lala []
+  "lala")
+
 (defroutes home-routes
-  (GET "/" [] (home))
-  (POST "/" request (post request))
   (GET "/admin" [] (admin nil))
   (GET "/reset" [] (reset))
-  (GET "/admin/:id" [id] (admin id)))
+  (GET "/admin/:id" [id] (admin id))
+  (GET "/user" request (lala))
+  (GET "/" [] (home))
+  (POST "/login" request (login request))
+  (POST "/" request (post request))
+  )

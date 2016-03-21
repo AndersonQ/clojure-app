@@ -10,7 +10,8 @@
                  [ring/ring-defaults "0.1.4"]
                  [org.clojure/java.jdbc "0.3.0"]
                  [java-jdbc/dsl "0.1.0"]
-                 [org.postgresql/postgresql "9.2-1003-jdbc4"]]
+                 [org.postgresql/postgresql "9.2-1003-jdbc4"]
+                 [clojurewerkz/scrypt "1.2.0"]]
   :plugins [[lein-ring "0.8.12"]]
   :ring {:handler app.handler/app
          :init app.handler/init
