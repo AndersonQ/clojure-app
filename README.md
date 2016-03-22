@@ -16,4 +16,4 @@ To start a web server for the application, run:
 
 ## License
 
-Copyright © 2016 FIXME
+[GPL v3.0](https://github.com/AndersonQ/clojure-app/blob/master/README.md)
